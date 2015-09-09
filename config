@@ -1,0 +1,13 @@
+thread=4
+harbor=0
+bootstrap="lua bootstrap"
+log=nil
+standalone="0.0.0.0:8080"
+master="127.0.0.1:8080"
+address="127.0.0.1:9090"
+lua_loader="./lualib/loader.lua"
+lua_service="./service/?.lua;./example/?.lua;./test/?.lua"
+lua_path="./lualib/?.lua;./?.lua"
+lua_cpath="./?.so"
+cservice="./?.so"
+start="main"
