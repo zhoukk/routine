@@ -1,8 +1,3 @@
-local pixel = require "pixel"
-local socket = require "socket"
-local crypt = require "crypt"
-
-
 --[[
 
 Protocol:
@@ -29,6 +24,11 @@ Error Code:
 Success:
 	200 base64(subid)
 ]]
+
+local pixel = require "pixel"
+local socket = require "socket"
+local crypt = require "crypt"
+
 
 local function send_package(fd, data)
 	if not socket.write(fd, data.."\n") then

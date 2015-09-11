@@ -7,6 +7,7 @@ local internal_id = 0
 
 local gated = {}
 
+--call by login server
 function gated.login_handler(uid, secret)
 	if users[uid] then
 		error(string.format("%s is already login", uid))
@@ -37,6 +38,8 @@ function gated.login_handler(uid, secret)
 	return id
 end
 
+
+--call by agent
 function gated.logout_handler(uid, subid)
 	local u = users[uid]
 	if u then
@@ -49,6 +52,7 @@ function gated.logout_handler(uid, subid)
 	end
 end
 
+--call by login server
 function gated.kick_handler(uid, subid)
 	local u = users[uid]
 	if u then
@@ -58,6 +62,7 @@ function gated.kick_handler(uid, subid)
 	end
 end
 
+--call by self when socket disconnect
 function gated.disconnect_handler(username)
 	local u = username_map[username]
 	if u then
@@ -65,11 +70,22 @@ function gated.disconnect_handler(username)
 	end
 end
 
+
+--call by self when a user auth ok
+function gated.auth_handler(username, fd, addr)
+	local u = username_map[username]
+	if u then
+		u.agent.req.cbk(fd, addr)
+	end
+end
+
+--call by self when recv a request from client
 function gated.request_handler(username, msg)
 	local u = username_map[username]
 	return pixel.rawcall(u.agent.address, 0, "client", 0, msg, sz)
 end
 
+--call by self when gate open
 function gated.register_handler(name)
 	servername = name
 	logind.req.regist(servername)
