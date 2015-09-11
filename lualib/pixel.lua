@@ -151,12 +151,16 @@ function pixel.fork(func, ...)
 end
 
 function pixel.timeout(t, func)
+	local flag = true
 	local session = c.command("TIMEOUT", tostring(t))
 	assert(session)
 	session = tonumber(session)
-	local co = co_create(func)
+	local co = co_create(function()
+		if flag then func() end
+	end)
 	assert(session_id_coroutine[session] == nil)
 	session_id_coroutine[session] = co
+	return function() flag = false end
 end
 
 function pixel.sleep(t)
