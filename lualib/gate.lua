@@ -64,6 +64,22 @@ local uid_login = {}
 local user_login = {}
 local fd_login = {}
 
+
+local function openclient(fd)
+	if connection[fd] then
+		socket.start(fd)
+	end
+end
+
+local function closeclient(fd)
+	local c = connection[fd]
+	if c then
+		connection[fd] = false
+		socket.close(fd)
+	end
+end
+
+
 local gate = {}
 
 function gate.username(uid, subid, servername)
@@ -102,26 +118,6 @@ function gate.logout(username)
 		fd_login[u.fd] = nil
 	end
 end
-
-local function openclient(fd)
-	if connection[fd] then
-		socket.start(fd)
-	end
-end
-
-local function closeclient(fd)
-	local c = connection[fd]
-	if c then
-		connection[fd] = false
-		socket.close(fd)
-	end
-end
-
-pixel.protocol {
-	name = "client",
-	id = pixel.PIXEL_CLIENT,
-}
-
 
 local listen
 
@@ -254,7 +250,7 @@ function gate.start(handler)
 
 	local function do_request(fd, msg, sz)
 		local u = assert(fd_login[fd], "invalid fd")
-		pixel.rawsend(u.agent.address, 0, "client", 0, msg, sz)
+		handler.request_handler(u.username, msg, sz)
 	end
 
 	local function client_request(fd, msg, sz)

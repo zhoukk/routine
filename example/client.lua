@@ -7,7 +7,7 @@ local ok, net = pcall(function() return socket.login {
 	host = "127.0.0.1",
 	port = 8000,
 	user = "pixel",
-	pass = "secret",
+	pass = "password",
 	server = "sample",
 } end)
 
@@ -37,10 +37,16 @@ net:request("get", {key="name"}, function(ret)
 	print("get ret", ret.value)
 end)
 
+
+local i = 1
 net:handle("heartbeat", function(ret)
 	print("heartbeat", ret.time)
+	if i > 10 then
+		net:request("quit")
+	end
+	i = i + 1
 end)
 
-while true do
+while i <= 10 do
 	net:dispatch()
 end

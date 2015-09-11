@@ -79,10 +79,15 @@ function gated.auth_handler(username, fd, addr)
 	end
 end
 
+pixel.protocol {
+	name = "client",
+	id = pixel.PIXEL_CLIENT,
+}
+
 --call by self when recv a request from client
-function gated.request_handler(username, msg)
+function gated.request_handler(username, msg, sz)
 	local u = username_map[username]
-	return pixel.rawcall(u.agent.address, 0, "client", 0, msg, sz)
+	return pixel.rawsend(u.agent.address, 0, "client", 0, msg, sz)
 end
 
 --call by self when gate open
