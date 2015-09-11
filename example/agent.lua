@@ -70,7 +70,7 @@ function request:login(uid, sid, secret)
 	pixel.fork(function()
 		while true do
 			send_package("heartbeat", {time=pixel.now()})
-			pixel.sleep(500)
+			pixel.sleep(100)
 		end
 	end)
 end
@@ -81,13 +81,14 @@ function request:logout()
 	pixel.exit()
 end
 
-function request:auth(fd)
+function request:cbk(fd, addr)
 	U.fd = fd
+	pixel.log("CBK fd:%d addr:%s\n", fd, addr)
 end
 
 function request:afk()
+	pixel.log("AFK fd:%d\n", U.fd)
 	U.fd = nil
-	pixel.log("AFK\n")
 end
 
 function request:send(...)
