@@ -29,15 +29,20 @@ local pixel = require "pixel"
 local socket = require "socket"
 local crypt = require "crypt"
 
-
+local socket_error = {}
 local function send_package(fd, data)
 	if not socket.write(fd, data.."\n") then
-		error(string.format("socket: %d send failed", fd))
+		error(socket_error)
 	end
 end
 
 local function recv_package(fd)
-	return socket.readline(fd)
+	local v = socket.readline(fd)
+	if v then
+		return v
+	else
+		error(socket_error)
+	end
 end
 
 local function launch_slave(auth_handler)
@@ -70,8 +75,20 @@ local function launch_slave(auth_handler)
 		return ok, server, uid, secret
 	end
 
+	local function ret(ok, err, ...)
+		if ok then
+			return err, ...
+		else
+			if err == socket_error then
+				return nil, "socket error"
+			else
+				return false, err
+			end
+		end
+	end
+
 	function request:attach(fd, addr)
-		return auth(fd, addr)
+		return ret(pcall(auth, fd, addr))
 	end
 
 end
@@ -84,7 +101,9 @@ local function launch_master(conf)
 		socket.start(fd)
 
 		if not ok then
-			send_package(fd, "401 Unauthorized")
+			if ok ~= nil then
+				send_package(fd, "401 Unauthorized")
+			end
 			error(server)
 		end
 
@@ -96,7 +115,7 @@ local function launch_master(conf)
 			user_login[uid] = true
 		end
 
-		local ok, err = pcall(conf.login_handler, server, uid, secret)
+		local ok, err = pcall(conf.login_handler, server, uid, secret, addr)
 		user_login[uid] = nil
 
 		if ok then
