@@ -298,6 +298,7 @@ function suspend(co, ok, command, param, size)
 			if ok == "TEST" then
 				if dead_service[co_address] then
 					release_watching(co_address)
+					unresponse[response] = nil
 					f = false
 					return false
 				else
@@ -330,7 +331,7 @@ function suspend(co, ok, command, param, size)
 			return ret
 		end
 		watching_service[co_address] = watching_service[co_address] + 1
-		session_response[co] = response
+		session_response[co] = true
 		unresponse[response] = true
 		return suspend(co, coroutine_resume(co, response))
 	elseif command == "EXIT" then

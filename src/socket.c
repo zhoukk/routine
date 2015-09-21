@@ -473,8 +473,8 @@ static int socket_forward_tcp(struct socket *sock, struct socket_message *ret) {
 			fprintf(stderr, "socket_forward_tcp: EAGAIN capture.\n");
 			break;
 		default:
-			fprintf(stderr, "socket read error:%d.\n", errno);
 			socket_force_close(sock, ret);
+			ret->data = strerror(errno);
 			return SOCKET_ERR;
 		}
 		return -1;
@@ -528,8 +528,8 @@ static int socket_forward_udp(struct socket *sock, struct socket_message *ret) {
 		case EAGAIN:
 			break;
 		default:
-			fprintf(stderr, "socket udp read error:%d.\n", errno);
 			socket_force_close(sock, ret);
+			ret->data = strerror(errno);
 			return SOCKET_ERR;
 		}
 		return -1;
@@ -605,7 +605,6 @@ static int socket_req_close(struct _close_req *req, struct socket_message *msg) 
 		msg->id = req->id;
 		msg->ud = req->ud;
 		msg->data = "closed";
-		msg->size = 0;
 		return SOCKET_CLOSE;
 	}
 	if (sock->high.head != 0 || sock->low.head != 0) {
@@ -635,8 +634,7 @@ _failed:
 	close(req->fd);
 	msg->ud = req->ud;
 	msg->id = req->id;
-	msg->data = 0;
-	msg->size = 0;
+	msg->data = "socket limit";
 	S.slot[HASH_ID(req->id)].type = SOCKET_TYPE_INVALID;
 	return SOCKET_ERR;
 }
@@ -658,6 +656,7 @@ static int socket_req_open(struct _open_req *req, struct socket_message *msg) {
 	ai_hints.ai_protocol = IPPROTO_TCP;
 	status = getaddrinfo(req->host, port, &ai_hints, &ai_list);
 	if (status != 0) {
+		msg->data = (void *)gai_strerror(status);
 		goto _failed;
 	}
 	for (ai_ptr = ai_list; ai_ptr != 0; ai_ptr = ai_ptr->ai_next) {
@@ -668,7 +667,7 @@ static int socket_req_open(struct _open_req *req, struct socket_message *msg) {
 		socket_keepalive(fd);
 		socket_nonblocking(fd);
 		status = connect(fd, ai_ptr->ai_addr, ai_ptr->ai_addrlen);
-		if (status != 0 && errno != EINPROGRESS && errno != EWOULDBLOCK) {
+		if (status != 0 && errno != EINPROGRESS) {
 			close(fd);
 			fd = -1;
 			continue;
@@ -676,20 +675,24 @@ static int socket_req_open(struct _open_req *req, struct socket_message *msg) {
 		break;
 	}
 	if (fd < 0) {
+		msg->data = strerror(errno);
 		goto _failed;
 	}
 	sock = socket_new(fd, req->id, PROTOCOL_TCP, req->ud, 1);
 	if (sock == 0) {
 		close(fd);
+		msg->data = "socket limit";
 		goto _failed;
 	}
 	if (status == 0) {
-		struct sockaddr * addr = ai_ptr->ai_addr;
-		void * sin_addr = (ai_ptr->ai_family == AF_INET) ? (void*)&((struct sockaddr_in *)addr)->sin_addr : (void*)&((struct sockaddr_in6 *)addr)->sin6_addr;
 		sock->type = SOCKET_TYPE_OPENED;
-		if (inet_ntop(ai_ptr->ai_family, sin_addr, S.buffer, sizeof(S.buffer))) {
+		struct sockaddr *addr = ai_ptr->ai_addr;
+		void *sin_addr = (ai_ptr->ai_family == AF_INET) ? (void *)&((struct sockaddr_in *)addr)->sin_addr : (void *)&((struct sockaddr_in6 *)addr)->sin6_addr;
+		int sin_port = ntohs((ai_ptr->ai_family == AF_INET) ? ((struct sockaddr_in *)addr)->sin_port : ((struct sockaddr_in6 *)addr)->sin6_port);
+		char tmp[INET6_ADDRSTRLEN];
+		if (inet_ntop(ai_ptr->ai_family, sin_addr, tmp, sizeof(tmp))) {
+			snprintf(S.buffer, sizeof(S.buffer), "%s:%d", tmp, sin_port);
 			msg->data = S.buffer;
-			msg->size = strlen(S.buffer);
 		}
 		freeaddrinfo(ai_list);
 		return SOCKET_OPEN;
@@ -709,16 +712,15 @@ static int socket_req_start(struct _start_req *req, struct socket_message *msg) 
 	struct socket *sock;
 	msg->id = req->id;
 	msg->ud = req->ud;
-	msg->data = 0;
-	msg->size = 0;
 	sock = &S.slot[HASH_ID(req->id)];
 	if (sock->type == SOCKET_TYPE_INVALID || sock->id != req->id) {
+		msg->data = "socket invalid id";
 		return SOCKET_ERR;
 	}
 	if (sock->type == SOCKET_TYPE_PACCEPT || sock->type == SOCKET_TYPE_PLISTEN) {
 		if (event_add(S.event_fd, sock->fd, sock)) {
 			sock->type = SOCKET_TYPE_INVALID;
-			fprintf(stderr, "event_add error:%d.\n", errno);
+			msg->data = strerror(errno);		
 			return SOCKET_ERR;
 		}
 		sock->type = (sock->type == SOCKET_TYPE_PACCEPT) ? SOCKET_TYPE_OPENED : SOCKET_TYPE_LISTEN;
@@ -740,7 +742,7 @@ static int socket_req_bind(struct _bind_req *req, struct socket_message *msg) {
 	msg->size = 0;
 	sock = socket_new(req->fd, req->id, PROTOCOL_TCP, req->ud, 1);
 	if (sock == 0) {
-		msg->data = 0;
+		msg->data = "socket limit";
 		return SOCKET_ERR;
 	}
 	socket_nonblocking(req->fd);
@@ -867,8 +869,7 @@ static int socket_req_setudp(struct _setudp_req *req, struct socket_message *msg
 	if (type != sock->protocol) {
 		msg->ud = sock->ud;
 		msg->id = id;
-		msg->size = 0;
-		msg->data = 0;
+		msg->data = "socket protocol mismatch";
 		return SOCKET_ERR;
 	}
 	if (type == PROTOCOL_UDP) {
@@ -942,8 +943,8 @@ static int socket_try_open(struct socket *sock, struct socket_message *msg) {
 	socklen_t len = sizeof(error);
 	code = getsockopt(sock->fd, SOL_SOCKET, SO_ERROR, (char *)&error, &len);
 	if (code < 0 || error) {
-		fprintf(stderr, "getsockopt error:%d.\n", errno);
 		socket_force_close(sock, msg);
+		msg->data = strerror(errno);
 		return SOCKET_ERR;
 	} else {
 		union sockaddr_all u;
@@ -953,10 +954,12 @@ static int socket_try_open(struct socket *sock, struct socket_message *msg) {
 			event_write(S.event_fd, sock->fd, sock, 0);
 		}
 		if (getpeername(sock->fd, &u.s, &slen) == 0) {
-			void * sin_addr = (u.s.sa_family == AF_INET) ? (void*)&u.v4.sin_addr : (void *)&u.v6.sin6_addr;
-			if (inet_ntop(u.s.sa_family, sin_addr, S.buffer, sizeof(S.buffer))) {
+			void *sin_addr = (u.s.sa_family == AF_INET) ? (void *)&u.v4.sin_addr : (void *)&u.v6.sin6_addr;
+			int sin_port = ntohs((u.s.sa_family == AF_INET) ? u.v4.sin_port : u.v6.sin6_port);
+			char tmp[INET6_ADDRSTRLEN];
+			if (inet_ntop(u.s.sa_family, sin_addr, tmp, sizeof(tmp))) {
+				snprintf(S.buffer, sizeof(S.buffer), "%s:%d", tmp, sin_port);
 				msg->data = S.buffer;
-				msg->size = strlen(S.buffer);
 			}
 		}
 		return SOCKET_OPEN;
@@ -968,29 +971,39 @@ static int socket_try_accept(struct socket *sock, struct socket_message *msg) {
 	socklen_t len = sizeof(u);
 	struct socket *newsock;
 	void * sin_addr;
+	int sin_port;
 	int client_fd, id;
 	client_fd = accept(sock->fd, &u.s, &len);
 	if (client_fd < 0) {
-		fprintf(stderr, "accept error:%d.\n", errno);
-		return SOCKET_ERR;
+		if (errno == EMFILE || errno == ENFILE) {
+			msg->id = sock->id;
+			msg->ud = sock->ud;
+			msg->data = strerror(errno);
+			return SOCKET_ERR;
+		} else {
+			return -1;
+		}
 	}
 	id = socket_next_id();
 	if (id < 0) {
 		close(client_fd);
-		fprintf(stderr, "not enough socket id while try accept\n");
-		return SOCKET_ERR;
+		return -1;
 	}
 	socket_keepalive(client_fd);
 	socket_nonblocking(client_fd);
 	newsock = socket_new(client_fd, id, PROTOCOL_TCP, sock->ud, 0);
 	if (newsock == 0) {
 		close(client_fd);
-		return SOCKET_ERR;
+		return -1;
 	}
 	newsock->type = SOCKET_TYPE_PACCEPT;
 	msg->size = newsock->id;
+	msg->data = 0;
 	sin_addr = (u.s.sa_family == AF_INET) ? (void*)&u.v4.sin_addr : (void *)&u.v6.sin6_addr;
-	if (inet_ntop(u.s.sa_family, sin_addr, S.buffer, sizeof(S.buffer))) {
+	sin_port = ntohs((u.s.sa_family == AF_INET) ? u.v4.sin_port : u.v6.sin6_port);
+	char tmp[INET6_ADDRSTRLEN];
+	if (inet_ntop(u.s.sa_family, sin_addr, tmp, sizeof(tmp))) {
+		snprintf(S.buffer, sizeof(S.buffer), "%s:%d", tmp, sin_port);
 		msg->data = S.buffer;
 	}
 	return SOCKET_ACCEPT;
@@ -1206,6 +1219,7 @@ int socket_poll(void) {
 			goto ret;
 		case SOCKET_TYPE_LISTEN:
 			r = socket_try_accept(sock, &msg);
+			if (r == -1) break;
 			goto ret;
 		case SOCKET_TYPE_INVALID:
 			break;

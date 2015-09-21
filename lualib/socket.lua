@@ -98,14 +98,14 @@ socket_handle[4] = function(id, newid, addr)
 end
 
 --error
-socket_handle[5] = function(id)
+socket_handle[5] = function(id, _, err)
 	local s = socket_pool[id]
 	if s == nil then
-		pixel.err("socket: error on unknown %d\n", id)
+		pixel.err("socket: error on unknown %d, %s\n", id, err)
 		return
 	end
 	if s.valid then
-		pixel.err("socket: error on %d\n", id)
+		pixel.err("socket: error on %d, %s\n", id, err)
 	end
 	s.valid = false
 	wakeup(s)
