@@ -3,7 +3,14 @@
 #include "queue.h"
 #include "pixel_impl.h"
 
+#include <stdio.h>
+#include <string.h>
 #include <assert.h>
+
+struct remote_message {
+	struct message msg;
+	uint32_t dest;
+};
 
 struct harbor {
 	struct pixel *hctx;
@@ -28,9 +35,16 @@ void harbor_start(struct pixel *ctx) {
 	pixel_reserve(ctx);
 }
 
-int harbor_send(struct message *m) {
+int harbor_send(uint32_t dest, struct message *m) {
 	uint32_t harbor = pixel_handle(H.hctx);
-	return pixel_push(harbor, m);
+	struct message rm;
+	rm.source = dest;
+	rm.session = m->session;
+	rm.data = pixel_alloc(0, sizeof *m);
+	rm.size = sizeof *m;
+	memcpy(rm.data, m, rm.size);
+	rm.size |= (size_t)PIXEL_HARBOR << MSG_TYPE_SHIFT;
+	return pixel_push(harbor, &rm);
 }
 
 int harbor_isremote(uint32_t handle) {

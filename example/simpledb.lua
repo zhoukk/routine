@@ -2,7 +2,9 @@ local pixel = require "pixel"
 
 local db = {}
 
-pixel.name "SIMPLEDB"
+function init()
+	pixel.name "SIMPLEDB"
+end
 
 function exit()
 	db = nil

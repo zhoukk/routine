@@ -1,13 +1,12 @@
 thread=4
-harbor=1
+harbor=2
 bootstrap="lua bootstrap"
 log=nil
-standalone="0.0.0.0:9000"
 master="127.0.0.1:9000"
-address="127.0.0.1:9001"
+address="127.0.0.1:9002"
 lua_loader="./lualib/loader.lua"
 lua_service="./service/?.lua;./example/?.lua;./test/?.lua"
 lua_path="./lualib/?.lua;./?.lua"
 lua_cpath="./?.so"
 cservice="./?.so"
-start="main"
+start="main_login"

@@ -12,7 +12,7 @@ extern "C" {
 	void harbor_init(int harbor);
 	void harbor_unit(void);
 	void harbor_start(struct pixel *ctx);
-	int harbor_send(struct message *m_);
+	int harbor_send(uint32_t dest, struct message *m_);
 	int harbor_isremote(uint32_t handle);
 
 #ifdef __cplusplus

@@ -17,7 +17,7 @@ local function f2()
 end
 
 function init()
-	datacenterd = pixel.bind("datacenterd")
+	datacenterd = pixel.bind("DATACENTERD")
 	datacenterd.req.set("hello", "world")
 	print(datacenterd.req.get "hello")
 

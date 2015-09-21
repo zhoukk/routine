@@ -183,7 +183,7 @@ function post:USUB(c)
 end
 
 function init()
-	datacenterd = pixel.bind("datacenterd")
+	datacenterd = pixel.bind("DATACENTERD")
 	local self = pixel.self()
 	local id = pixel.harbor(self)
 	assert(datacenterd.req.set("multicast", id, self) == nil)

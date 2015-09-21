@@ -4,7 +4,9 @@ local database = {}
 local wait_queue = {}
 local mode = {}
 
-pixel.name "datacenterd"
+function init()
+	pixel.name "DATACENTERD"
+end
 
 local function query(db, key, ...)
 	if key == nil then

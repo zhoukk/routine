@@ -273,13 +273,13 @@ int pixel_send(struct pixel *ctx, uint32_t source, uint32_t destination, int typ
 	_filter_args(ctx, type, &session, (void **)&data, &size);
 	if (source == 0) {
 		source = ctx->handle;
-	}	
+	}
 	m.source = source;
 	m.session = session;
 	m.data = data;
 	m.size = size;
 	if (harbor_isremote(destination)) {
-		r = harbor_send(&m);
+		r = harbor_send(destination, &m);
 	} else {
 		r = pixel_push(destination, &m);
 	}
@@ -427,7 +427,7 @@ static const char *_cmd_timeout(struct pixel *ctx, const char *cmd, const char *
 		event.session = session;
 		event.handle = ctx->handle;
 		timer_timeout(ti, &event, sizeof event);
-	}	
+	}
 	sprintf(ctx->tmp, "%d", session);
 	return ctx->tmp;
 }
@@ -436,7 +436,7 @@ static const char *_cmd_now(struct pixel *ctx, const char *cmd, const char *para
 	uint32_t now = timer_now();
 	sprintf(ctx->tmp, "%u", now);
 	return ctx->tmp;
-}	
+}
 
 static const char *_cmd_starttime(struct pixel *ctx, const char *cmd, const char *param) {
 	uint32_t starttime = timer_starttime();

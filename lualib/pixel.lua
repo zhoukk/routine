@@ -82,9 +82,24 @@ function pixel.self()
 	return self_addr
 end
 
+function pixel.start_harbor()
+	c.command("HARBOR")
+end
+
+local harbor
+local function get_harbor()
+	if not harbor then
+		harbor = pixel.bind("harbor")
+	end
+	return harbor
+end
+
 function pixel.name(name, addr)
 	addr = addr or pixel.self()
 	c.command("NAME", name.." "..addr)
+	if name == string.upper(name) then
+		get_harbor().post.regist(name, addr)
+	end
 end
 
 function pixel.query(name)
@@ -92,7 +107,10 @@ function pixel.query(name)
 	if addr then
 		return tonumber(addr)
 	end
-	return nil
+	if name == string.upper(name) then
+		addr = get_harbor().req.query(name)
+	end
+	return addr
 end
 
 function pixel.now()
