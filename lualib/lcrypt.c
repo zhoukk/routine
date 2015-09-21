@@ -293,9 +293,12 @@ static void des_crypt( const uint32_t SK[32], const uint8_t input[8], uint8_t ou
 static int lrandomkey(lua_State *L) {
 	char tmp[8];
 	int i;
+	char x = 0;
 	for (i=0;i<8;i++) {
 		tmp[i] = rand() & 0xff;
+		x ^= tmp[i];
 	}
+	if (x == 0) tmp[0] |= 1;
 	lua_pushlstring(L, tmp, 8);
 	return 1;
 }
@@ -621,18 +624,19 @@ static void push64(lua_State *L, uint64_t r) {
 	lua_pushlstring(L, (const char *)tmp, 8);
 }
 static int ldhsecret(lua_State *L) {
-	uint64_t r;
 	uint32_t x[2], y[2];
 	read64(L, x, y);
-	r = powmodp((uint64_t)x[0] | (uint64_t)x[1]<<32,
-			(uint64_t)y[0] | (uint64_t)y[1]<<32);
+	uint64_t xx = (uint64_t)x[0] | (uint64_t)x[1]<<32;
+	uint64_t yy = (uint64_t)y[0] | (uint64_t)y[1]<<32;
+	if (xx == 0 || yy == 0)
+		return luaL_error(L, "can not be 0");
+	uint64_t r = powmodp(xx, yy);
 	push64(L, r);
 	return 1;
 }
 #define G 5
 static int ldhexchange(lua_State *L) {
 	size_t sz = 0;
-	uint64_t r;
 	uint32_t xx[2];
 	const uint8_t *x = (const uint8_t *)luaL_checklstring(L, 1, &sz);
 	if (sz != 8) {
@@ -640,7 +644,11 @@ static int ldhexchange(lua_State *L) {
 	}
 	xx[0] = x[0] | x[1]<<8 | x[2]<<16 | x[3]<<24;
 	xx[1] = x[4] | x[5]<<8 | x[6]<<16 | x[7]<<24;
-	r = powmodp(5,	(uint64_t)xx[0] | (uint64_t)xx[1]<<32);
+	uint64_t x64 = (uint64_t)xx[0] | (uint64_t)xx[1]<<32;
+	if (x64 == 0)
+		x64 = 1;
+
+	uint64_t r = powmodp(5,	x64);
 	push64(L, r);
 	return 1;
 }

@@ -367,7 +367,7 @@ static int lunpack(lua_State *L) {
 	lua_pushinteger(L, sm->type);
 	lua_pushinteger(L, sm->id);
 	lua_pushinteger(L, sm->size);
-	if (sm->type == SOCKET_OPEN || sm->type == SOCKET_ACCEPT) {
+	if (sm->type == SOCKET_OPEN || sm->type == SOCKET_ACCEPT || sm->type == SOCKET_ERR) {
 		lua_pushlstring(L, sm->data, strlen(sm->data));
 	} else {
 		lua_pushlightuserdata(L, sm->data);
