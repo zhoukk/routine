@@ -93,12 +93,12 @@ end
 --call by self when gate open
 function gated.register_handler(name)
 	servername = name
-	logind.req.regist(servername)
+	logind.req.regist(servername, pixel.self())
 end
 
 
 function init()
-	logind = pixel.bind("logind")
+	logind = pixel.bind("LOGIND")
 	gate.start(gated)
 end
 

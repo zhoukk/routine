@@ -802,6 +802,23 @@ static int lharbor(lua_State *L) {
 	return 2;
 }
 
+static int lharbor_unpack(lua_State *L) {
+	struct message *m;
+	if (lua_type(L, 1) == LUA_TSTRING) {
+		size_t _size;
+		m = (struct message *)lua_tolstring(L, 1, &_size);
+	} else {
+		m = (struct message *)lua_touserdata(L, 1);
+	}
+	int type = m->size >> MSG_TYPE_SHIFT;
+	lua_pushinteger(L, type);
+	lua_pushinteger(L, m->session);
+	lua_pushinteger(L, m->source);
+	lua_pushlightuserdata(L, m->data);
+	lua_pushinteger(L, m->size & MSG_TYPE_MASK);
+	return 5;
+}
+
 int pixel_lua(lua_State *L) {
 	luaL_Reg l[] = {
 		{"send", lsend},
@@ -812,6 +829,7 @@ int pixel_lua(lua_State *L) {
 		{"tostring", ltostring},
 		{"harbor", lharbor},
 		{"drop", ldrop},
+		{"harbor_unpack", lharbor_unpack},
 		{0, 0},
 	};
 	luaL_newlibtable(L, l);

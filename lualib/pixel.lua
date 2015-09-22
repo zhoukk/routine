@@ -37,6 +37,7 @@ pixel.pack = serial.pack
 pixel.unpack = serial.unpack
 pixel.tostring = c.tostring
 pixel.harbor = c.harbor
+pixel.harbor_unpack = c.harbor_unpack
 
 pixel.err = function(...)
 	return c.log("[ERROR] "..string_format(...))
@@ -648,15 +649,27 @@ end
 function pixel.send(addr, tname, ...)
 	local p = proto[tname]
 	if type(addr) == "string" then
-		addr = tonumber(c.command("QUERY", addr))
+		addr = tonumber(pixel.query(addr))
 	end
 	return c.send(addr, 0, p.id, 0, p.pack(...))
+end
+
+function pixel.rawcall(addr, source, tname, ...)
+	local p = proto[tname]
+	if type(addr) == "string" then
+		addr = tonumber(pixel.query(addr))
+	end
+	local session = c.send(addr, source, p.id, ...)
+	if session == nil then
+		error("call to invalid address " .. addr)
+	end
+	return yield_call(addr, session)
 end
 
 function pixel.call(addr, tname, ...)
 	local p = proto[tname]
 	if type(addr) == "string" then
-		addr = tonumber(c.command("QUERY", addr))
+		addr = tonumber(pixel.query(addr))
 	end
 	local session = c.send(addr, 0, p.id, nil, p.pack(...))
 	if session == nil then

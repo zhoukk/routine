@@ -10,7 +10,7 @@ local logind = {
 	port = 8000,
 	instance = 2,
 	multi_login = false,
-	name = "logind",
+	name = "LOGIND",
 	request={},
 }
 
@@ -39,8 +39,7 @@ function logind.login_handler(server, uid, secret)
 	return subid
 end
 
-function logind.request:regist(server)
-	local address = self.source
+function logind.request:regist(server, address)
 	gameserver_list[server] = pixel.bind(address)
 	pixel.log("gated [%s] regist, address:%d\n", server, address)
 end
@@ -54,7 +53,8 @@ function logind.request:logout(uid, subid)
 end
 
 
-function init()
+function init(port)
+	logind.port = port
 	login.start(logind)
 end
 
