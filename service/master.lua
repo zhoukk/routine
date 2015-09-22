@@ -18,12 +18,18 @@ function _master(id, addr)
 			break
 		end
 		local name, handle, address = string.match(line, "([^ ]+) ([^ ]+) ([^ ]+)$")
-		harbor_name[name] = {handle = handle, address = address}
+		harbor_name[name] = {handle = handle, address = address, fd = id}
 		pixel.log("master regist global name:%s handle:%s address:%s\n", name, handle, address)
 		for i, v in pairs(harbor_addr) do
 			if i ~= id then
 				socket.write(i, line.."\n")
 			end
+		end
+	end
+	pixel.log("master disconnect harbor from addr :%s\n", addr)
+	for i, v in pairs(harbor_name) do
+		if v.fd == id then
+			harbor_name[i] = nil
 		end
 	end
 	harbor_addr[id] = nil
