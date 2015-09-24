@@ -148,6 +148,10 @@ function gate.start(handler)
 		handler.register_handler(servername)
 	end
 
+	function request:close()
+		handler.unregister_handler()
+	end
+
 	function request:login(...)
 		return handler.login_handler(...)
 	end

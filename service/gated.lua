@@ -96,6 +96,9 @@ function gated.register_handler(name)
 	logind.req.regist(servername, pixel.self())
 end
 
+function gated.unregister_handler()
+	logind.req.unregist(servername)
+end
 
 function init()
 	logind = pixel.bind("LOGIND")

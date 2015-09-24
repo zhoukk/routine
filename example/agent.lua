@@ -70,7 +70,8 @@ function request:login(uid, sid, secret)
 	pixel.fork(function()
 		while true do
 			send_package("heartbeat", {time=pixel.now()})
-			pixel.sleep(100)
+			pixel.sleep(10)
+			database.req.set("abc", pixel.now())
 		end
 	end)
 end

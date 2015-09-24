@@ -44,6 +44,16 @@ function logind.request:regist(server, address)
 	pixel.log("gated [%s] regist, address:%d\n", server, address)
 end
 
+function logind.request:unregist(server)
+	pixel.log("gated [%s] unregist, address:%d\n", server, gameserver_list[server].address)
+	for i, v in pairs(user_online) do
+		if v.server == server then
+			user_online[i] = nil
+		end
+	end 
+	gameserver_list[server] = nil
+end
+
 function logind.request:logout(uid, subid)
 	local u = user_online[uid]
 	if u then

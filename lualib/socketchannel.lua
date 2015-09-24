@@ -89,7 +89,7 @@ local function dispatch_by_session(self)
 				self.__result_data[co] = result_data
 				pixel.wakeup(co)
 			else
-				pixel.error("socket: unknown session :", session)
+				pixel.err("socket: unknown session :", session)
 			end
 		else
 			close_channel_socket(self)
@@ -164,7 +164,7 @@ local function connect_backup(self)
 				host = addr
 				port = self.__port
 			end
-			pixel.error("socket: connect to backup host", host, port)
+			pixel.err("socket: connect to backup host", host, port)
 			local fd = socket.open(host, port)
 			if fd then
 				self.__host = host
@@ -201,7 +201,7 @@ local function connect_once(self)
 			close_channel_socket(self)
 			if message ~= socket_error then
 				self.__authcoroutine = false
-				pixel.error("socket: auth failed", message)
+				pixel.err("socket: auth failed", message)
 			end
 		end
 		self.__authcoroutine = false
@@ -220,14 +220,14 @@ local function try_connect(self , once)
 	while not self.__closed do
 		if connect_once(self) then
 			if not once then
-				pixel.error("socket: connect to", self.__host, self.__port)
+				pixel.err("socket: connect to", self.__host, self.__port)
 			end
 			return true
 		elseif once then
 			return false
 		end
 		if t > 1000 then
-			pixel.error("socket: try to reconnect", self.__host, self.__port)
+			pixel.err("socket: try to reconnect", self.__host, self.__port)
 			pixel.sleep(t)
 			t = 0
 		else
