@@ -1159,6 +1159,7 @@ static void clear_closed(int id, int type) {
 			if (s) {
 				if (s->type == SOCKET_TYPE_INVALID && s->id == id) {
 					e->ud = 0;
+					break;
 				}
 			}
 		}
@@ -1234,18 +1235,16 @@ int socket_poll(void) {
 						goto ret;
 					}
 				}
-				if (ev->write) {
+				if (ev->write && r != SOCKET_CLOSE && r != SOCKET_ERR) {
 					ev->read = 0;
 					--S.ev_idx;
 				}
 				if (r == -1) break;
-				clear_closed(sock->id, r);
 				goto ret;
 			}
 			if (ev->write) {
 				r = socket_send_buffer(sock, &msg);
 				if (r == -1) break;
-				clear_closed(sock->id, r);
 				goto ret;
 			}
 			break;

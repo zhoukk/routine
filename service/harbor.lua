@@ -12,7 +12,6 @@ local function read_response(sock)
 		print("read_response failed")
 	end
 	local sz, session, ret = string.unpack("<I4I4b", header)
-	print("session:",session)
 	local cont = sock:read(sz)
 	local msg = string.unpack("s2", cont)
 	return session, ret==1, msg, false
@@ -60,7 +59,7 @@ function _harbor(id)
 		local data = string.unpack("s2", cont)
 		pixel.timeout(0, function()
 			-- function post:request(id, dest, session, t, data)
-				local ok, retdata, retsz = pcall(pixel.rawcall, tonumber(dest), 0, t, 0, data)
+				local ok, retdata, retsz = pcall(pixel.rawcall, tonumber(dest), 0, t, session, data)
 				if ok then
 					local msg = pixel.tostring(retdata, retsz)
 					local resp = string.pack("<I4I4bs2", retsz+2, session, 1, msg)
