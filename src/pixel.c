@@ -307,7 +307,7 @@ void pixel_timer_dispatch(void *ud) {
 
 void pixel_socket_dispatch(struct socket_message *sm) {
 	struct message m;
-	unsigned handle;
+	uint32_t handle;
 	size_t size;
 	int ret = sm->type;
 	if (ret == SOCKET_EXIT) {
