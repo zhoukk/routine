@@ -71,11 +71,11 @@ local function launch_slave(auth_handler)
 		local check_token = recv_package(fd)
 		local token = crypt.desdecode(secret, crypt.base64decode(check_token))
 		local ok, server, uid = pcall(auth_handler, token)
-		socket.abandon(fd)
 		return ok, server, uid, secret
 	end
 
 	local function ret(ok, err, ...)
+		socket.abandon(fd)
 		if ok then
 			return err, ...
 		else

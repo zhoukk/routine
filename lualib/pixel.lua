@@ -202,10 +202,10 @@ function pixel.yield()
 	return pixel.sleep(0)
 end
 
-function pixel.wait()
+function pixel.wait(co)
 	local session = c.session()
 	local ok, err = coroutine_yield("SLEEP", session)
-	local co = coroutine_running()
+	co = co or coroutine_running()
 	sleep_session[co] = nil
 	session_id_coroutine[session] = nil
 end

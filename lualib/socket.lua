@@ -27,7 +27,7 @@ end
 local function suspend(s)
 	assert(not s.co)
 	s.co = coroutine_running()
-	pixel.wait()
+	pixel.wait(s.co)
 	if s.closing then
 		pixel.wakeup(s.closing)
 	end
@@ -220,7 +220,7 @@ function socket.close(id)
 		if s.co then
 			assert(not s.closing)
 			s.closing = coroutine_running()
-			pixel.wait()
+			pixel.wait(s.closing)
 		else
 			suspend(s)
 		end
